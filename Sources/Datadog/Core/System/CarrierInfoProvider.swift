@@ -4,7 +4,9 @@
  * Copyright 2019-2020 Datadog, Inc.
  */
 
+#if !targetEnvironment(macCatalyst) && !os(tvOS)
 import CoreTelephony
+#endif
 
 /// Network connection details specific to cellular radio access.
 internal struct CarrierInfo {
@@ -38,6 +40,7 @@ internal protocol CarrierInfoProviderType {
 extension CarrierInfo.RadioAccessTechnology {
     init(ctRadioAccessTechnologyConstant: String) {
         switch ctRadioAccessTechnologyConstant {
+        #if !targetEnvironment(macCatalyst) && !os(tvOS)
         case CTRadioAccessTechnologyGPRS: self = .GPRS
         case CTRadioAccessTechnologyEdge: self = .Edge
         case CTRadioAccessTechnologyWCDMA: self = .WCDMA
@@ -49,19 +52,25 @@ extension CarrierInfo.RadioAccessTechnology {
         case CTRadioAccessTechnologyCDMAEVDORevB: self = .CDMAEVDORevB
         case CTRadioAccessTechnologyeHRPD: self = .eHRPD
         case CTRadioAccessTechnologyLTE: self = .LTE
+        #endif
         default: self = .unknown
         }
     }
 }
 
 internal class CarrierInfoProvider: CarrierInfoProviderType {
+    #if !targetEnvironment(macCatalyst) && !os(tvOS)
     private let networkInfo: CTTelephonyNetworkInfo
 
     init(networkInfo: CTTelephonyNetworkInfo = CTTelephonyNetworkInfo()) {
         self.networkInfo = networkInfo
     }
+    #else
+    init() { }
+    #endif
 
     var current: CarrierInfo? {
+        #if !targetEnvironment(macCatalyst) && !os(tvOS)
         let carrier: CTCarrier?
         let radioTechnology: String?
 
@@ -87,5 +96,12 @@ internal class CarrierInfoProvider: CarrierInfoProviderType {
             carrierAllowsVOIP: currentCTCarrier.allowsVOIP,
             radioAccessTechnology: .init(ctRadioAccessTechnologyConstant: radioAccessTechnology)
         )
+        #else
+        return CarrierInfo(
+            carrierName: nil,
+            carrierISOCountryCode: nil,
+            carrierAllowsVOIP: false,
+            radioAccessTechnology: .unknown)
+        #endif
     }
 }
